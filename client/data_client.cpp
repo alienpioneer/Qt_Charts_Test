@@ -24,6 +24,7 @@
 
 // Compile using : g++ data_client.cpp -o dataClient -pthread
 
+std::atomic<bool> flag = true;
 int samplingPeriod = 2000;
 std::mutex mtx;
 
@@ -94,12 +95,12 @@ int32_t readLightSensor()
 int udpSender()
 {
    int sleepPeriod;
-   int sockFD;
+   int send_skt;
    struct sockaddr_in addr;
-   std::string dataStr = "Test";
+   std::string dataStr = "";
 
    // Creating socket
-   if ( (sockFD = socket(AF_INET, SOCK_DGRAM, 0)) < 0 )
+   if ( (send_skt = socket(AF_INET, SOCK_DGRAM, 0)) < 0 )
    {
      perror("Sender socket creation failed");
      exit(EXIT_FAILURE);
@@ -108,22 +109,25 @@ int udpSender()
    addr.sin_family = AF_INET;
    addr.sin_port = htons(PORT);
 
-   if(inet_pton(AF_INET, ADDRESS_IN, &addr.sin_addr)<=0)
+   if( inet_pton(AF_INET, ADDRESS_IN, &addr.sin_addr)<=0 )
    {
      printf("\nInvalid address/ Address not supported \n");
      return -1;
    }
 
-   while (1)
+   while (flag)
    {
       dataStr = std::to_string( readLightSensor() );
       char msg_array[dataStr.length() + 1];
       strcpy(msg_array, dataStr.c_str());
-      sendto(sockFD, msg_array, sizeof(msg_array), MSG_CONFIRM,
+
+      sendto(send_skt, msg_array, sizeof(msg_array), MSG_CONFIRM,
              (const struct sockaddr *) &addr, sizeof(addr));
+
 #ifdef DEBUG_MESSAGES
       printf("Sending : %s\n", msg_array);
 #endif
+
       mtx.lock();
       sleepPeriod = samplingPeriod;
       mtx.unlock();
@@ -131,7 +135,7 @@ int udpSender()
       std::this_thread::sleep_for(std::chrono::milliseconds(sleepPeriod));
    }
 
-   close(sockFD);
+   close(send_skt);
 
    return 0;
 }
@@ -160,14 +164,13 @@ int udpReceiver()
    servaddr.sin_addr.s_addr = INADDR_ANY;
 
    // Bind the socket with the server address
-   if ( bind(rcv_skt, (const struct sockaddr *)&servaddr,
-           sizeof(servaddr)) < 0 )
+   if ( bind(rcv_skt, (const struct sockaddr *)&servaddr, sizeof(servaddr)) < 0 )
    {
        perror("Receiver socket bind failed");
        exit(EXIT_FAILURE);
    }
 
-   while (1)
+   while (flag)
    {
       n = recvfrom( rcv_skt, (char *)buffer, UDP_BUFF_SIZE, MSG_WAITALL,
                     (struct sockaddr *)&servaddr, &len );
