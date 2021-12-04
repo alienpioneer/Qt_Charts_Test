@@ -21,15 +21,6 @@ int main(int argc, char *argv[])
             QCoreApplication::exit(-1);
     };
 
-//    QQuickView viewer;
-//    viewer.engine()->rootContext()->setContextProperty("controller", &controller);
-//    QObject::connect(viewer.engine(), &QQmlEngine::quit, &viewer, &QWindow::close);
-////    viewer.setTitle(QStringLiteral("Test"));
-////    viewer.setColor(QColor("#404040"));
-//    viewer.setSource(QUrl("qrc:/main.qml"));
-////    viewer.setResizeMode(QQuickView::SizeRootObjectToView);
-//    viewer.show();
-
     QQmlApplicationEngine engine;
 
     engine.rootContext()->setContextProperty("controller", &controller);

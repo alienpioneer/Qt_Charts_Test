@@ -48,16 +48,9 @@ Window {
             axisX: xAxis
             axisY: yAxis
 
-//            XYPoint {
-//                x: 0
-//                y: 2000
-//            }
-
         }
 
         Component.onCompleted: {
-//            yAxix.max = controller.getYMax
-//            xAxix.max = controller.getXMax
             console.log(controller.getYMax)
             console.log(controller.getXMax)
         }
