@@ -82,27 +82,18 @@ int32_t readLightSensor()
 }
 
 
-int main()
+int udpSender()
 {
    int sockFD;
    struct sockaddr_in addr;
-   struct sockaddr_in servaddr;
-
    std::string dataStr = "Test";
-
-   char buffer[UDP_BUFF_SIZE];
-   int n;
-   socklen_t len;
 
    // Creating socket
    if ( (sockFD = socket(AF_INET, SOCK_DGRAM, 0)) < 0 )
    {
-     perror("Socket creation failed");
+     perror("Sender socket creation failed");
      exit(EXIT_FAILURE);
    }
-
-
-   memset(&servaddr, 0, sizeof(addr));
 
    addr.sin_family = AF_INET;
    addr.sin_port = htons(PORT);
@@ -113,17 +104,6 @@ int main()
      return -1;
    }
 
-   memset(&servaddr, 0, sizeof(servaddr));
-   servaddr.sin_family = AF_INET;
-   servaddr.sin_port = htons(PORT);
-   servaddr.sin_addr.s_addr = INADDR_ANY;
-
-//   if(inet_pton(AF_INET, ADDRESS_OUT, &servaddr.sin_addr)<=0)
-//    {
-//        std::cout << "\nInvalid address/ Address not supported \n";
-//        return -1;
-//    }
-
    while (1)
    {
       dataStr = std::to_string( readLightSensor() );
@@ -131,21 +111,73 @@ int main()
       strcpy(msg_array, dataStr.c_str());
       sendto(sockFD, msg_array, sizeof(msg_array), MSG_CONFIRM,
              (const struct sockaddr *) &addr, sizeof(addr));
+
       printf("Sending : %s\n", msg_array);
-
-//      std::string s(msg_array);
-//      std::cout << "Sending " << s;
-
-//      n = recvfrom( sockFD, (char *)buffer, UDP_BUFF_SIZE, MSG_WAITALL,
-//                    (struct sockaddr *)&servaddr, &len );
-//      printf("Received : %s\n", buffer);
-
-//      buffer[n] = '\0';
-//      std::cout << "Received " << buffer;
 
       std::this_thread::sleep_for(std::chrono::milliseconds(2000));
    }
 
    close(sockFD);
+
+   return 0;
+}
+
+
+int udpReceiver()
+{
+   int rcv_skt;
+   struct sockaddr_in servaddr;
+
+   char buffer[UDP_BUFF_SIZE];
+   int n;
+   socklen_t len;
+
+   // Creating socket
+   if ( (rcv_skt = socket(AF_INET, SOCK_DGRAM, 0)) < 0 )
+   {
+     perror("Receiver socket creation failed");
+     exit(EXIT_FAILURE);
+   }
+
+   memset(&servaddr, 0, sizeof(servaddr));
+
+   servaddr.sin_family = AF_INET;
+   servaddr.sin_port = htons(PORT);
+   servaddr.sin_addr.s_addr = INADDR_ANY;
+
+   // Bind the socket with the server address
+   if ( bind(rcv_skt, (const struct sockaddr *)&servaddr,
+           sizeof(servaddr)) < 0 )
+   {
+       perror("Receiver socket bind failed");
+       exit(EXIT_FAILURE);
+   }
+
+   while (1)
+   {
+      n = recvfrom( rcv_skt, (char *)buffer, UDP_BUFF_SIZE, MSG_WAITALL,
+                    (struct sockaddr *)&servaddr, &len );
+      if (n)
+      {
+         buffer[n] = '\0';
+         printf("Receiving : %s\n", buffer);
+      }
+
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+   }
+
+   close(rcv_skt);
+
+   return 0;
+}
+
+int main()
+{
+   std::thread s1 = std::thread(&udpSender);
+   std::thread r1 = std::thread(&udpReceiver);
+
+   s1.join();
+   r1.join();
+
    return 0;
 }
