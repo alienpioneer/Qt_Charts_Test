@@ -20,45 +20,48 @@
 
 int32_t readLightSensor()
 {
-    const char* filePath    = "/sys/bus/iio/devices/iio:device0/in_illuminance_raw";
-    const int   BUFFER_SIZE = 10;
-    int32_t     result      = -1;
-    char        buffer[BUFFER_SIZE];
+   const char* filePath    = "/sys/bus/iio/devices/iio:device0/in_illuminance_raw";
+   const int   BUFFER_SIZE = 10;
+   int32_t     result      = -1;
+   char        buffer[BUFFER_SIZE];
 
-    memset(buffer, 0, BUFFER_SIZE);
+   memset(buffer, 0, BUFFER_SIZE);
 
-    fd_set      fileDescriptorSet;
-    timeval     timeout { .tv_sec  = 3, .tv_usec = 0 };
+   fd_set      fileDescriptorSet;
+   timeval     timeout { .tv_sec  = 3, .tv_usec = 0 };
 
-    int fileDescriptor = open(filePath, O_RDONLY);
+   int fileDescriptor = open(filePath, O_RDONLY);
 
-    FD_ZERO (&fileDescriptorSet);
-    FD_SET (fileDescriptor, &fileDescriptorSet);
+   FD_ZERO (&fileDescriptorSet);
+   FD_SET (fileDescriptor, &fileDescriptorSet);
 
-    if (fileDescriptor == -1)
-    {
-        std::cout << "Unable to open " << filePath << std::endl;
-    }
-    else
-    {
-        // if ready is < 0 --> file open problem, --> if is 0 => timeout
-        int ready = select(fileDescriptor+1, &fileDescriptorSet, NULL, NULL, &timeout);
+   if (fileDescriptor == -1)
+   {
+     std::cout << "Unable to open " << filePath << std::endl;
+   }
+   else
+   {
+      // if ready is < 0 --> file open problem, --> if is 0 => timeout
+      int ready = select(fileDescriptor+1, &fileDescriptorSet, NULL, NULL, &timeout);
 
-        if (ready < 0)
-        {
-            std::cout << "File not ready " << filePath << std::endl;
-        }
-        else if (ready == 0)
-        {
-            std::cout << "Timeout reading from file " << filePath << std::endl;
-        }
-        else
-        {
+      if (ready < 0)
+      {
+         std::cout << "File not ready " << filePath << std::endl;
+      }
+      else if (ready == 0)
+      {
+         std::cout << "Timeout reading from file " << filePath << std::endl;
+      }
+      else
+      {
+         for (uint8_t i = 0; i < 3; i++)
+         {
             result = read(fileDescriptor, buffer, BUFFER_SIZE);
 
             if (result == -1)
             {
-                std::cout << "Error reading from light sensor " << filePath << std::endl;
+                std::cout << "Error reading from light sensor.Retry " << i << std::endl;
+                std::this_thread::sleep_for(std::chrono::milliseconds(200));
             }
             else
             {
@@ -67,13 +70,15 @@ int32_t readLightSensor()
                 param << BUFFER_SIZE;
                 param << "d";
                 sscanf(buffer, param.str().c_str(), &result);
+                break;
             }
-        }
+         }
+      }
 
-        close(fileDescriptor);
-    }
+   close(fileDescriptor);
+   }
 
-    return result;
+   return result;
 }
 
 

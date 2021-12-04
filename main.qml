@@ -14,7 +14,9 @@ Window {
     Connections {
         target: controller
         ignoreUnknownSignals: true
-        onUpdateValue : console.log(controller.getValue)
+        onUpdateValue : addPoint(controller.value)
+        onUpdateYMax : yAxis.max = controller.yAxisMax
+        onUpdateXMax : xAxis.max = controller.xAxisMax
     }
 
     ChartView {
@@ -51,13 +53,15 @@ Window {
         }
 
         Component.onCompleted: {
-            console.log(controller.getYMax)
-            console.log(controller.getXMax)
+            xAxis.max = controller.xAxisMax
+            yAxis.max = controller.yAxisMax
+//            console.log(controller.yAxisMax)
+//            console.log(controller.xAxisMax)
         }
     }
 
     function addPoint(value){
         console.log(value)
-        dataSeries.append(x,value)
+        dataSeries.append(value.x,value.y)
     }
 }

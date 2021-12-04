@@ -9,27 +9,7 @@ UiController::UiController()
 }
 
 UiController::~UiController()
-{
-
-}
-
-int UiController::getValue()
-{
-    const int data = _buffer.toInt();
-    _buffer.clear();
-    qDebug() << "Sending to qml " << data;
-    return data;
-}
-
-QVariant UiController::getYMax()
-{
-    return QVariant::fromValue(_yAxisMax);
-}
-
-int UiController::getXMax()
-{
-    return _xAxisMax;
-}
+{}
 
 void UiController::readDatagrams()
 {
@@ -39,5 +19,38 @@ void UiController::readDatagrams()
     {
         _buffer = _socket->receiveDatagram().data();
     }
-    emit updateValue();
+
+    int data = _buffer.toInt();
+
+    if( data > 0 )
+    {
+        int dataX = 0;
+
+        if (_allPoints.size() > 0)
+            dataX = _allPoints.last().x()+_samplingPeriod;
+
+        _allPoints.append( QPoint(dataX, data) );
+        emit updateValue();
+    }
+}
+
+QPoint UiController::value()
+{
+    //qDebug() << "Sending to qml " << data;
+    return _allPoints.last();
+}
+
+int UiController:: yAxisMax()
+{
+    return _yAxisMax;
+}
+
+int UiController:: xAxisMax()
+{
+    return _xAxisMax;
+}
+
+int UiController::xAxisMin()
+{
+    return _xAxisMin;
 }
