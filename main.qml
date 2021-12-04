@@ -15,7 +15,11 @@ Window {
         target: controller
         ignoreUnknownSignals: true
 
-        onUpdateValue : addPoint(controller.value)
+        onUpdateValue :
+        {
+            addPoint( controller.value )
+        }
+
     }
 
     TextField {
@@ -131,9 +135,18 @@ Window {
             }
 
             LineSeries {
-                id : dataSeries
-                name: "LineSeries"
+                id : rawDataSeries
+                name: "Raw Data"
                 color: "#d80028"
+                width: 2
+                axisX: xAxis
+                axisY: yAxis
+            }
+
+            LineSeries {
+                id : logDataSeries
+                name: "Log Data"
+                color: "#f9ff00"
                 width: 2
                 axisX: xAxis
                 axisY: yAxis
@@ -145,8 +158,8 @@ Window {
     {
         // Calculate X position
         var xVal = 0
-        if(dataSeries.count > 0)
-            xVal = ( dataSeries.at(dataSeries.count-1).x + parseInt(sPeriodTextField.text) )
+        if(rawDataSeries.count > 0)
+            xVal = ( rawDataSeries.at(rawDataSeries.count-1).x + parseInt(sPeriodTextField.text) )
 
         // Resize instantaneous max Y value
         if (value > yAxis.max)
@@ -154,8 +167,9 @@ Window {
             yAxis.max = value + Math.round(value*0.3)
         }
 
-        dataSeries.append(xVal, value)
-        //console.log("Plotting Value", xVal, value)
+        rawDataSeries.append(xVal, value)
+        logDataSeries.append(xVal, Math.log10(value) * 10/0.25)
+        console.log("Plotting Value", xVal, value, Math.log10(value) * 10/0.25)
 
         if ( xVal > plotRectangle.maxThreshold )
         {
@@ -168,11 +182,12 @@ Window {
             //console.log( "New maxThreshold", plotRectangle.maxThreshold )
 
             //Remove invisible points
-            dataSeries.removePoints(0, getSeriesLastHiddenIndex(dataSeries, xAxis.min)-1)
-            //console.log( "New count", dataSeries.count )
+            rawDataSeries.removePoints(0, getSeriesLastHiddenIndex(rawDataSeries, xAxis.min)-1)
+            logDataSeries.removePoints(0, getSeriesLastHiddenIndex(rawDataSeries, xAxis.min)-1)
+            //console.log( "New count", rawDataSeries.count )
 
             // Resize yMAx
-            yAxis.max = findSeriesMax(dataSeries) + Math.round(findSeriesMax(dataSeries)*0.3)
+            yAxis.max = findSeriesMax(rawDataSeries) + Math.round(findSeriesMax(rawDataSeries)*0.3)
             //console.log("New Y max", yAxis.max)
         }
     }
