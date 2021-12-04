@@ -22,12 +22,6 @@ void UiController::readDatagrams()
 
     int data = _buffer.toInt();
 
-    if (data > _yAxisMax)
-    {
-        _yAxisMax = data + data*0.05;
-        emit updateYMax();
-    }
-
     if( data > 0 )
     {
         _currentValue = data;

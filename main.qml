@@ -14,8 +14,8 @@ Window {
     Connections {
         target: controller
         ignoreUnknownSignals: true
+
         onUpdateValue : addPoint(controller.value)
-        onUpdateYMax : yAxis.max = controller.yAxisMax
     }
 
     TextField {
@@ -59,7 +59,7 @@ Window {
             width: 53
             height: 28
             color: "#000000"
-            text: qsTr("xMax")
+            text: qsTr("xWidth")
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             font.pointSize: 8
@@ -108,7 +108,9 @@ Window {
         anchors.topMargin: 27
         color: "#6e6e6e"
 
-        property int maxThreshold: (parseInt(maxXtextField.text) * 0.90)|0
+        property int maxThreshold: Math.round(parseInt(maxXtextField.text) * 0.90)
+        property int xMinOffset: Math.round(parseInt(maxXtextField.text) * 0.25)
+        property int xMaxOffset: Math.round(parseInt(maxXtextField.text) * 0.90)
 
         ChartView {
             id: plotView
@@ -131,6 +133,8 @@ Window {
             LineSeries {
                 id : dataSeries
                 name: "LineSeries"
+                color: "#d80028"
+                width: 2
                 axisX: xAxis
                 axisY: yAxis
             }
@@ -139,29 +143,58 @@ Window {
 
     function addPoint(value)
     {
+        // Calculate X position
         var xVal = 0
         if(dataSeries.count > 0)
             xVal = ( dataSeries.at(dataSeries.count-1).x + parseInt(sPeriodTextField.text) )
 
+        // Resize instantaneous max Y value
+        if (value > yAxis.max)
+        {
+            yAxis.max = value + Math.round(value*0.3)
+        }
+
         dataSeries.append(xVal, value)
-        console.log("Plotting Value", xVal, value)
+        //console.log("Plotting Value", xVal, value)
 
         if ( xVal > plotRectangle.maxThreshold )
         {
-            var newXAxisMin = (xAxis.max * 0.25)|0
-            var newXAxisMax = newXAxisMin + parseInt(maxXtextField.text)
+            xAxis.min = xAxis.min + plotRectangle.xMinOffset
+            xAxis.max = xAxis.min + parseInt(maxXtextField.text)
+            //console.log("New axis", xAxis.min, xAxis.max)
 
-            console.log("New axis", newXAxisMin, newXAxisMax)
+            // Calculate new threshold value
+            plotRectangle.maxThreshold =  xAxis.min + plotRectangle.xMaxOffset
+            //console.log( "New maxThreshold", plotRectangle.maxThreshold )
 
-            var samplePeriod =  parseInt(sPeriodTextField.text)
-            var removePointsCount = (newXAxisMin/samplePeriod)|0
+            //Remove invisible points
+            dataSeries.removePoints(0, getSeriesLastHiddenIndex(dataSeries, xAxis.min)-1)
+            //console.log( "New count", dataSeries.count )
 
-            xAxis.max = newXAxisMax
-            xAxis.min = newXAxisMin
-            dataSeries.removePoints(0, removePointsCount)
-
-            plotRectangle.maxThreshold = (newXAxisMax * 0.90)|0
-            console.log("New maxThreshold", plotRectangle.maxThreshold)
+            // Resize yMAx
+            yAxis.max = findSeriesMax(dataSeries) + Math.round(findSeriesMax(dataSeries)*0.3)
+            //console.log("New Y max", yAxis.max)
         }
+    }
+
+    //need to find the last visible index since there is no guarantee that all the data is received
+    function getSeriesLastHiddenIndex(series, xAxisMin)
+    {
+        for (var index = 0; index < series.count ; index++)
+        {
+            if( series.at(index).x > xAxisMin )
+                return index;
+        }
+    }
+
+    function findSeriesMax(series)
+    {
+        var max = 0;
+        for (var index = 0; index < series.count ; index++)
+        {
+            if( series.at(index).y > max )
+                max = series.at(index).y;
+        }
+        return max;
     }
 }
