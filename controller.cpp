@@ -22,22 +22,23 @@ void UiController::readDatagrams()
 
     int data = _buffer.toInt();
 
+    if (data > _yAxisMax)
+    {
+        _yAxisMax = data + data*0.05;
+        emit updateYMax();
+    }
+
     if( data > 0 )
     {
-        int dataX = 0;
-
-        if (_allPoints.size() > 0)
-            dataX = _allPoints.last().x()+_samplingPeriod;
-
-        _allPoints.append( QPoint(dataX, data) );
+        _currentValue = data;
         emit updateValue();
     }
 }
 
-QPoint UiController::value()
+int UiController::value()
 {
     //qDebug() << "Sending to qml " << data;
-    return _allPoints.last();
+    return _currentValue;
 }
 
 int UiController:: yAxisMax()
@@ -45,12 +46,3 @@ int UiController:: yAxisMax()
     return _yAxisMax;
 }
 
-int UiController:: xAxisMax()
-{
-    return _xAxisMax;
-}
-
-int UiController::xAxisMin()
-{
-    return _xAxisMin;
-}
