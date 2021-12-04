@@ -4,6 +4,8 @@
 #include <string.h>
 #include <string>
 #include <thread>
+#include <atomic>
+#include <mutex>
 #include <sys/select.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -17,6 +19,13 @@
 #define ADDRESS_OUT "10.0.0.2"
 #define PORT 34455
 #define UDP_BUFF_SIZE 64
+
+#define DEBUG_MESSAGES
+
+// Compile using : g++ data_client.cpp -o dataClient -pthread
+
+int samplingPeriod = 2000;
+std::mutex mtx;
 
 int32_t readLightSensor()
 {
@@ -60,7 +69,7 @@ int32_t readLightSensor()
 
             if (result == -1)
             {
-                std::cout << "Error reading from light sensor.Retry " << i << std::endl;
+                std::cout << "Error reading from light sensor.Retry " << std::endl;
                 std::this_thread::sleep_for(std::chrono::milliseconds(200));
             }
             else
@@ -84,6 +93,7 @@ int32_t readLightSensor()
 
 int udpSender()
 {
+   int sleepPeriod;
    int sockFD;
    struct sockaddr_in addr;
    std::string dataStr = "Test";
@@ -100,7 +110,7 @@ int udpSender()
 
    if(inet_pton(AF_INET, ADDRESS_IN, &addr.sin_addr)<=0)
    {
-     std::cout << "\nInvalid address/ Address not supported \n";
+     printf("\nInvalid address/ Address not supported \n");
      return -1;
    }
 
@@ -111,10 +121,14 @@ int udpSender()
       strcpy(msg_array, dataStr.c_str());
       sendto(sockFD, msg_array, sizeof(msg_array), MSG_CONFIRM,
              (const struct sockaddr *) &addr, sizeof(addr));
-
+#ifdef DEBUG_MESSAGES
       printf("Sending : %s\n", msg_array);
+#endif
+      mtx.lock();
+      sleepPeriod = samplingPeriod;
+      mtx.unlock();
 
-      std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+      std::this_thread::sleep_for(std::chrono::milliseconds(sleepPeriod));
    }
 
    close(sockFD);
@@ -160,7 +174,12 @@ int udpReceiver()
       if (n)
       {
          buffer[n] = '\0';
+
+#ifdef DEBUG_MESSAGES
          printf("Receiving : %s\n", buffer);
+#endif
+         std::lock_guard<std::mutex> lock(mtx);
+         samplingPeriod = static_cast<int>(strtol(buffer,nullptr,10));
       }
 
       std::this_thread::sleep_for(std::chrono::milliseconds(10));

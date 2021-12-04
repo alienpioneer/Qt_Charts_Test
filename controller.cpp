@@ -29,14 +29,27 @@ void UiController::readDatagrams()
     }
 }
 
+void UiController::onUpdateSamplePeriod()
+{
+
+}
+
 int UiController::value()
 {
     //qDebug() << "Sending to qml " << data;
     return _currentValue;
 }
 
-int UiController:: yAxisMax()
+int UiController::samplePeriod()
 {
-    return _yAxisMax;
+    return _samplingPeriod;
+}
+
+void UiController::setSamplingPeriod(int samplePeriod)
+{
+    _samplingPeriod = samplePeriod;
+    qDebug() << "sampling period " <<_samplingPeriod;
+//    QByteArray data = QByteArray::number(_samplingPeriod);
+//    _socket->writeDatagram(data.data(), data.length(), QHostAddress("10.0.0.2"), PORT);
 }
 

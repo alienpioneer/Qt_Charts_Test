@@ -11,30 +11,33 @@
 class UiController: public QObject
 {
     Q_OBJECT
-    Q_PROPERTY( int value    READ value    NOTIFY updateValue)
-    Q_PROPERTY( int yAxisMax READ yAxisMax NOTIFY updateYMax )
+    Q_PROPERTY( int value        READ value                                 NOTIFY updateValue        )
+    Q_PROPERTY( int samplePeriod READ samplePeriod WRITE setSamplingPeriod  NOTIFY updateSamplePeriod )
 
 public:
     UiController();
     ~UiController();
 
     int value();
-    int yAxisMax();
+    int samplePeriod();
 
 private:
     void readDatagrams();
+    void onUpdateSamplePeriod();
 
 signals:
     void updateValue();
-    void updateYMax();
+    void updateSamplePeriod();
+
+public slots:
+    Q_INVOKABLE void setSamplingPeriod(int samplePeriod);
 
 private:
     QUdpSocket* _socket;
     QByteArray  _buffer;
     int         _currentValue;
-    int         _yAxisMax   = 500;
-    int   _maxPoints  = 100;
-    int   _samplingPeriod = 2;
+    int         _samplingPeriod = 2;
+
 };
 
 #endif // CONTROLLER_H

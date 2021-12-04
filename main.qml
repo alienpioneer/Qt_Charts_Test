@@ -94,6 +94,7 @@ Window {
             font.pointSize: 8
         }
 
+        onAccepted: controller.setSamplingPeriod(parseInt(text))
     }
 
     Rectangle {
@@ -169,7 +170,7 @@ Window {
 
         rawDataSeries.append(xVal, value)
         logDataSeries.append(xVal, Math.log10(value) * 10/0.25)
-        console.log("Plotting Value", xVal, value, Math.log10(value) * 10/0.25)
+        //console.log("Plotting Value", xVal, value, Math.log10(value) * 10/0.25)
 
         if ( xVal > plotRectangle.maxThreshold )
         {
